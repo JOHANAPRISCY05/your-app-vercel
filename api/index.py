@@ -2,37 +2,44 @@ import json
 from http.server import BaseHTTPRequestHandler
 import urllib.parse
 
-# Load student data from the JSON file
-def load_data():
-    with open('q-vercel-python.json', 'r') as file:
-        data = json.load(file)
-    return data
+# List of student marks as dictionaries
+student_marks = [
+    {"name": "hPZTeg", "marks": 33},
+    {"name": "ucIF7L", "marks": 60},
+    {"name": "FHpnPdi", "marks": 38},
+    {"name": "Y5E6KJQsF", "marks": 66},
+    {"name": "B7Bfrp7", "marks": 13},
+    {"name": "0e4ovvtj", "marks": 82},
+    {"name": "4lTJW", "marks": 40},
+    {"name": "2vL", "marks": 42},
+    {"name": "NSVK", "marks": 57},
+]
 
-# Handler class to process incoming requests
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        # Parse the query parameters
-        query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        try:
+            # Parse query parameters correctly
+            query_components = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            names = query_components.get("name", [])  # Extract list of names
+            
+            marks_list = []
+            
+            for name in names:
+                student = next((s for s in student_marks if s["name"] == name), None)
+                marks_list.append(student["marks"] if student else "Not Found")
 
-        # Get 'name' parameters from the query string
-        names = query.get('name', [])
+            response = {"marks": marks_list}
 
-        # Load data from the JSON file
-        data = load_data()
-
-        # Prepare the result dictionary
-        result = {"marks": []}
-        for name in names:
-            # Find the marks for each name
-            for entry in data:
-                if entry["name"] == name:
-                    result["marks"].append(entry["marks"])
-
-        # Send the response header
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')  # Enable CORS for any origin
-        self.end_headers()
-
-        # Send the JSON response
-        self.wfile.write(json.dumps(result).encode('utf-8'))
+            # Send JSON response
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+        
+        except Exception as e:
+            # Catch any runtime errors and return a proper error message
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            error_response = {"error": "Internal Server Error", "message": str(e)}
+            self.wfile.write(json.dumps(error_response).encode('utf-8'))
